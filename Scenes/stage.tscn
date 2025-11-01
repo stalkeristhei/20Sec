@@ -1,0 +1,63 @@
+[gd_scene load_steps=3 format=3 uid="uid://cyvwl7bikgq00"]
+
+[ext_resource type="PackedScene" uid="uid://d2wac7u6cpx7" path="res://Assets/World-Assets/mossy-floor-1.fbx" id="1_plxqo"]
+[ext_resource type="PackedScene" uid="uid://dr0vmir7k58no" path="res://Assets/World-Assets/stone-wall-1.blend" id="2_70rqm"]
+
+[node name="Stage" type="Node3D"]
+
+[node name="mossy-floor-1" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.004437, 0, 0.79278946)
+
+[node name="mossy-floor-2" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.900221, 0, 0.7409582)
+
+[node name="mossy-floor-3" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9360223, 0, 7.4748693)
+
+[node name="mossy-floor-4" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.691679, 4.7683716e-07, 7.403496)
+
+[node name="stone-wall-1" parent="." instance=ExtResource("2_70rqm")]
+transform = Transform3D(2.015, 0, 0, 0, 2.015, 0, 0, 0, 2.015, -2.0344348, 0.099098206, 15.648461)
+
+[node name="stone-wall-2" parent="." instance=ExtResource("2_70rqm")]
+transform = Transform3D(2.03, 0, 0, 0, 2.03, 0, 0, 0, 2.03, -0.46768045, 0, 15.959287)
+
+[node name="stone-wall-3" parent="." instance=ExtResource("2_70rqm")]
+transform = Transform3D(2.015, 0, 0, 0, 2.015, 0, 0, 0, 2.015, -2.0344348, 0.099098206, -3.932889)
+
+[node name="stone-wall-4" parent="." instance=ExtResource("2_70rqm")]
+transform = Transform3D(2.03, 0, 0, 0, 2.03, 0, 0, 0, 2.03, -0.46768045, 0, -3.6220636)
+
+[node name="stone-wall-5" parent="." instance=ExtResource("2_70rqm")]
+transform = Transform3D(-0.12073108, 0, 2.0113802, 0, 2.0150003, 0, -2.0113802, 0, -0.12073108, -3.4946811, 0.099098206, 7.7577076)
+
+[node name="stone-wall-6" parent="." instance=ExtResource("2_70rqm")]
+transform = Transform3D(-0.1216298, 0, 2.026353, 0, 2.03, 0, -2.026353, 0, -0.1216298, -3.2782881, 0, 6.175144)
+
+[node name="stone-wall-6" parent="stone-wall-6" instance=ExtResource("2_70rqm")]
+transform = Transform3D(-1.3986876, 0, 0.06060348, 0, 1.4, 0, -0.06060348, 0, -1.3986876, -2.8998628, 0, -0.12942827)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(-0.076521546, -0.20482, 0.9758039, -0.014379449, 0.9787984, 0.20432091, -0.9969642, 0.0016034298, -0.07784437, 15.256983, 2.1732774, 6.627363)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.13791771, -0.2665656, 0.9538981, 0.038144294, 0.9638168, 0.26382232, -0.9897089, -3.762448e-09, 0.14309537, 16.441046, 2.5191307, 6.356528)
+
+[node name="mossy-floor-5" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.004437, 0, 13.481781)
+
+[node name="mossy-floor-6" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.900221, 0, 13.42995)
+
+[node name="mossy-floor-7" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(0.009983092, 0, -0.9999502, 0, 1, 0, 0.9999502, 0, 0.009983092, 10.892837, 0, -0.4882679)
+
+[node name="mossy-floor-8" parent="." instance=ExtResource("1_plxqo")]
+transform = Transform3D(0.009983092, 0, -0.9999502, 0, 1, 0, 0.9999502, 0, 0.009983092, 11.003612, 0, 5.415578)
+
+[node name="mossy-floor-7" parent="mossy-floor-8" instance=ExtResource("1_plxqo")]
+transform = Transform3D(-0.9998844, 0, 0.015201309, 0, 1, 0, -0.015201309, 0, -0.9998844, 7.6532173, 0, -0.97347736)
+
+[node name="mossy-floor-8" parent="mossy-floor-8" instance=ExtResource("1_plxqo")]
+transform = Transform3D(-0.9998844, 0, 0.015201309, 0, 1, 0, -0.015201309, 0, -0.9998844, 1.7484522, 0, -1.0114107)
