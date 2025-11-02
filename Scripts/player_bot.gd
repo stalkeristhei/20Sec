@@ -1,3 +1,5 @@
+class_name Player
+
 extends CharacterBody3D
 
 # --- SETTINGS ---
@@ -13,7 +15,7 @@ extends CharacterBody3D
 @export var DASH_MAX_SPEED: float = 25.0
 @export var DASH_DURATION: float = 0.3
 @export var ENEMY: CharacterBody3D
-@export var dash_cooldown:float= 0.5    #seconds
+@export var dash_cooldown:float= 0.5	#seconds
 @export var attack_cooldown:float = 0.4
 const JUMP_VELOCITY: float = 4.5
 var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -23,9 +25,10 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var visuals: Node3D = $visuals
 @onready var camera_mount: Node3D = $"Camera Mount"
 @onready var animation_player: AnimationPlayer = $visuals/AnimationPlayer
-# --- NEW: COMBO TIMER ---
-# (Remember to add this node in the editor and connect its 'timeout' signal)
 @onready var combo_timer: Timer = $ComboTimer
+# --- NEW: CAMERA SHAKE NODE ---
+# !!! IMPORTANT: Update this path if your Camera3D is not a direct child of 'Camera Mount'
+@onready var camera_node: Camera3D = $"Camera Mount/Camera3D"
 
 # --- STATES ---
 enum STATE { IDLE, WALK, RUN, DASH_CHARGE, DASH, ATTACK, HURT, DEATH }
@@ -39,26 +42,38 @@ var is_charging: bool = false
 var last_dash_time:float= 0.0
 var last_attack_time:float=0.0
 
-# --- NEW: COMBO SYSTEM VARIABLES ---
+# --- COMBO SYSTEM VARIABLES ---
 var combo_step: int = 0
 var can_queue_next_combo: bool = false
 var is_attack_queued: bool = false
 
-# --- NEW: COMBO TIMINGS (in seconds) ---
-# These define when the combo window *opens* for each attack
+# --- COMBO TIMINGS (in seconds) ---
 const COMBO_P1_WINDOW_START: float = 0.8  # During 1.4s anim
 const COMBO_P2_WINDOW_START: float = 0.4  # During 0.7s anim
 const COMBO_P3_WINDOW_START: float = 0.3  # During 0.5s anim
 
-
 # --- TARGETING ---
 var is_targeting: bool = false
 
+# --- NEW: CAMERA SHAKE VARIABLES ---
+var original_cam_pos: Vector3 = Vector3.ZERO
+var shake_timer: float = 0.0
+var shake_max_strength: float = 0.0
+var shake_max_duration: float = 1.0
+
+var is_attack_connected:bool=false
 # --------------------------------------------------
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hide_trails()
+	
+	# --- NEW: Store original camera position for shake reset ---
+	if camera_node:
+		original_cam_pos = camera_node.position
+	else:
+		# This warning helps you debug if the path is wrong
+		push_warning("Camera shake node not found. Did you set the 'camera_node' path correctly?")
 
 # --------------------------------------------------
 # -------------------- INPUT -----------------------
@@ -71,7 +86,6 @@ func _input(event: InputEvent) -> void:
 		toggle_targeting()
 	
 	if event.is_action_pressed("Attack"):
-		# --- MODIFIED: Calls new combo-aware attack handler ---
 		handle_attack()
 
 # Mouse handling
@@ -113,35 +127,29 @@ func _physics_process(delta: float) -> void:
 	handle_gravity_and_jump()
 	handle_dash(delta)
 	handle_targeting_rotation(delta)
+	# --- NEW: Handle camera shake every frame ---
+	handle_camera_shake(delta)
 
-# Only allow movement and animation updates if not attacking
 	if state != STATE.ATTACK:
 		handle_movement(delta)
 		handle_animations()
-
-
 
 # --------------------------------------------------
 # ---------------- CORE LOGIC ----------------------
 # --------------------------------------------------
 
-# --- MODIFIED: Handles both starting and continuing combos ---
 func handle_attack():
 	if state == STATE.ATTACK:
-		# We are already attacking, check if we can queue the next move
 		if can_queue_next_combo:
 			is_attack_queued = true
-			# Prevent queueing multiple times
 			can_queue_next_combo = false 
 	
 	elif can_start_new_attack():
-		# We are starting a new combo from a non-attack state
 		state = STATE.ATTACK
 		combo_step = 1
 		is_attack_queued = false
 		can_queue_next_combo = false
-		set_anim("sword_combo_p1") # This will also start the timer
-		# last_attack_time = Time.get_ticks_msec() # <-- REMOVE THIS LINE
+		set_anim("sword_combo_p1") 
 
 func handle_gravity_and_jump() -> void:
 	if not is_on_floor():
@@ -228,19 +236,15 @@ func handle_movement(delta: float) -> void:
 # ----------------- HELPERS ------------------------
 # --------------------------------------------------
 
-# --- MODIFIED: This is now the brain of the combo system ---
 func _on_animation_player_animation_finished(anim_name):
-	# Check if the finished animation is part of our combo
 	if not (anim_name in ["sword_combo_p1", "sword_combo_p2", "sword_combo_p3"]):
-		return # Not a combo animation, do nothing.
+		return 
 
-	# The animation finished, so the combo window is definitely closed.
 	combo_timer.stop()
 	can_queue_next_combo = false
 
 	if is_attack_queued:
-		# --- SUCCESS! Player queued the next attack ---
-		is_attack_queued = false # Reset the queue
+		is_attack_queued = false 
 		
 		if anim_name == "sword_combo_p1":
 			combo_step = 2
@@ -249,26 +253,19 @@ func _on_animation_player_animation_finished(anim_name):
 			combo_step = 3
 			set_anim("sword_combo_p3")
 		elif anim_name == "sword_combo_p3":
-			# Loop back to the first attack
 			combo_step = 1
 			set_anim("sword_combo_p1")
 			
 	else:
-		# --- FAILED! Player did not queue, combo is broken ---
 		combo_step = 0
 		if state != STATE.DEATH and state != STATE.HURT:
 			state = STATE.IDLE
 		
-		# Start the attack cooldown *now*, after the last attack finished
 		last_attack_time = Time.get_ticks_msec()
 
 
 func can_move() -> bool:
-	# --- MODIFIED: No longer check for STATE.ATTACK ---
-	# We can still move during the *startup* of an attack,
-	# but the animation itself will lock us (which is handled by can_move checks
-	# in handle_movement)
-	return not (state in [STATE.HURT, STATE.DEATH, STATE.DASH_CHARGE]) # <-- ATTACK removed
+	return not (state in [STATE.ATTACK, STATE.HURT, STATE.DEATH, STATE.DASH_CHARGE])
 
 func can_dash():
 	return Time.get_ticks_msec() - last_dash_time >= dash_cooldown*1000
@@ -295,33 +292,26 @@ func start_dash() -> void:
 
 func handle_animations() -> void:
 	match state:
-		# --- MODIFIED: ATTACK state removed from here ---
-		# Attack animations are now "sticky" and are set by
-		# handle_attack() and _on_animation_player_animation_finished()
-		STATE.IDLE:        set_anim("mixamo_com")
-		STATE.WALK:        set_anim("walk")
-		STATE.RUN:         set_anim("run")
-		STATE.HURT:        set_anim("hurt")
-		STATE.DEATH:       set_anim("death")
+		STATE.IDLE:		set_anim("mixamo_com")
+		STATE.WALK:		set_anim("walk")
+		STATE.RUN:		set_anim("run")
+		STATE.HURT:		set_anim("hurt")
+		STATE.DEATH:		set_anim("death")
 		STATE.DASH_CHARGE: set_anim("dash_charge")
 		STATE.DASH:
 			set_anim("dash_mid_end")
 			show_trails()
 			return
 	
-	# Hide trails if not in a state that uses them (like DASH)
-	# This check prevents us from hiding trails *during* the attack anim
 	if state != STATE.ATTACK:
 		hide_trails()
 
-# --- MODIFIED: Now starts the combo timer ---
 func set_anim(anim: String) -> void:
 	if animation_player.current_animation != anim:
 		animation_player.play(anim)
 
-	# --- NEW: Start combo timer based on which attack is playing ---
-	combo_timer.stop() # Stop any previous timer
-	can_queue_next_combo = false # Window is closed by default
+	combo_timer.stop() 
+	can_queue_next_combo = false 
 	
 	if anim == "sword_combo_p1":
 		combo_timer.start(COMBO_P1_WINDOW_START)
@@ -340,28 +330,89 @@ func show_trails() -> void:
 		gpu_trail_3d.visible = true
 		gpu_trail_3d.emitting = true
 
-# --- MODIFIED: Renamed to be more specific ---
 func can_start_new_attack():
-	# Check if enough time has passed since the last attack *combo finished*
 	var is_cooldown_ready = Time.get_ticks_msec() - last_attack_time >= attack_cooldown * 1000
-	
-	# Check if we are in a state that allows starting a new attack
 	var is_in_valid_state = state in [STATE.IDLE, STATE.WALK, STATE.RUN]
-	
 	return is_cooldown_ready and is_in_valid_state
 	
-# --- NEW: This is the signal callback for the ComboTimer ---
 func _on_combo_timer_timeout():
-	# The timer fired, which means the combo window is NOW OPEN
 	can_queue_next_combo = true
-
 
 func hide_trails() -> void:
 	if gpu_trail_3d:
 		gpu_trail_3d.emitting = false
 		gpu_trail_3d.visible = false
 
+# --------------------------------------------------
+# ----------------- GAME JUICE ---------------------
+# --------------------------------------------------
 
 func attack_connected():
 	Global.frame_freeze(0.1, 0.2)
+	# --- NEW: Example of how to call the shake function! ---
+	start_camera_shake(0.15, 0.2)
+
+
+# --- NEW: Call this function to start the shake ---
+# strength: How far the camera can move (e.g., 0.1 to 0.5 is good)
+# duration: How long the shake lasts in seconds (e.g., 0.2)
+func start_camera_shake(strength: float = 0.2, duration: float = 0.3):
+	# Don't override a stronger shake
+	if strength > shake_max_strength:
+		shake_max_strength = strength
 	
+	shake_max_duration = duration
+	shake_timer = duration
+
+# --- NEW: This function runs every frame to apply the shake ---
+func handle_camera_shake(delta: float):
+	if not camera_node:
+		return # Don't try to shake if node is invalid
+
+	if shake_timer > 0:
+		shake_timer -= delta
+		if shake_timer <= 0:
+			# --- Shake finished ---
+			shake_timer = 0.0
+			camera_node.position = original_cam_pos
+			shake_max_strength = 0.0 # Reset max strength
+		else:
+			# --- Still shaking ---
+			# Calculate current strength with a nice falloff (ease-out)
+			# This is the "damping"
+			var decay_ratio = shake_timer / shake_max_duration
+			var current_strength = shake_max_strength * (decay_ratio * decay_ratio)
+
+			# Generate random offset and apply it
+			var offset = Vector3( \
+				randf_range(-1.0, 1.0), \
+				randf_range(-1.0, 1.0), \
+				randf_range(-1.0, 1.0) \
+				).normalized() * current_strength
+				
+			camera_node.position = original_cam_pos + offset
+	elif camera_node.position != original_cam_pos:
+		# Ensure it's reset if timer is 0
+		camera_node.position = original_cam_pos
+		
+func small_camera_shake():
+	# Feel free to tweak these values!
+	start_camera_shake(0.01, 0.4) # Low strength, short duration
+
+
+# --- MODIFIED: Preset for a successful "hit" ---
+func big_camera_shake():
+	# --- ...to here! ---
+	# This function now handles BOTH the frame freeze and the shake.
+	Global.frame_freeze(0.1, 0.2) 
+	
+	# Feel free to tweak these values!
+	start_camera_shake(0.1, 0.1) # Higher strength, longer duration
+
+func hit_or_miss_camera_shake():#this function is being called via the animation player
+	if is_attack_connected:#this value is being set by the sword scene inm the hand, when the swords detects enemy it changes this value to true
+		big_camera_shake()
+		print("attack_connected")
+	else:
+		print("attack_not_connected")
+		small_camera_shake()

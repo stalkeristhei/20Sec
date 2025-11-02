@@ -85,6 +85,11 @@ Attack={
 ]
 }
 
+[layer_names]
+
+3d_physics/layer_2="hurtbox"
+3d_physics/layer_3="hitbox"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

@@ -1,6 +1,7 @@
-[gd_scene load_steps=9 format=4 uid="uid://cje62awmajpbc"]
+[gd_scene load_steps=11 format=4 uid="uid://cje62awmajpbc"]
 
 [ext_resource type="Texture2D" uid="uid://lllwfmr7kj3g" path="res://Assets/sword/textures/Sword_Base_Color.png" id="1_6j4cb"]
+[ext_resource type="Script" uid="uid://b7fphm6f0ag1v" path="res://Scenes/sword.gd" id="1_ksptp"]
 [ext_resource type="Texture2D" uid="uid://behkd5jmcd4vh" path="res://Assets/sword/source/Sword_occlusion.tga" id="2_ksptp"]
 [ext_resource type="Texture2D" uid="uid://cigc680n1q485" path="res://Assets/sword/source/Sword_Metallic.png" id="3_5uo8h"]
 [ext_resource type="Texture2D" uid="uid://csx786mapjfqa" path="res://Assets/sword/textures/Sword_Normal_DirectX.png" id="4_4gx3d"]
@@ -48,9 +49,25 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_8oivm")
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_6j4cb"]
+size = Vector3(0.19897461, 6.101345, 0.27687073)
+
 [node name="Sword_Low_Done" type="Node3D"]
+script = ExtResource("1_ksptp")
 
 [node name="Plane003" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 4.8446655e-08, 1.5658123, -2.1195412e-07)
 mesh = SubResource("ArrayMesh_xbgyw")
 skeleton = NodePath("")
+
+[node name="Area3D" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.012084961, -1.6937237, 0.013852656)
+shape = SubResource("BoxShape3D_6j4cb")
+debug_color = Color(0.9652614, 2.0214916e-06, 0.5047217, 0.41960785)
+
+[connection signal="area_entered" from="Area3D" to="." method="_on_area_3d_area_entered"]
+[connection signal="area_exited" from="Area3D" to="." method="_on_area_3d_area_exited"]
