@@ -14,6 +14,7 @@ extends CharacterBody3D
 @export var DASH_DURATION: float = 0.3
 @export var ENEMY: CharacterBody3D
 @export var dash_cooldown:float= 0.5   #seconds
+@export var attack_cooldown:float = 0.4
 const JUMP_VELOCITY: float = 4.5
 var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -33,7 +34,7 @@ var dash_timer: float = 0.0
 var dash_direction: Vector3 = Vector3.ZERO
 var is_charging: bool = false
 var last_dash_time:float= 0.0
-
+var last_attack_time:float=0.0
 # --- TARGETING ---
 var is_targeting: bool = false
 
@@ -52,7 +53,9 @@ func _input(event: InputEvent) -> void:
 		handle_mouse_motion(event)
 	elif event.is_action_pressed("Target"):
 		toggle_targeting()
-
+	
+	if event.is_action_pressed("Attack"):
+		handle_attack()
 # Mouse handling
 # Mouse handling
 func handle_mouse_motion(event: InputEventMouseMotion) -> void:
@@ -114,9 +117,16 @@ func _physics_process(delta: float) -> void:
 	handle_movement(delta)
 	handle_animations()
 
+
 # --------------------------------------------------
 # ---------------- CORE LOGIC ----------------------
 # --------------------------------------------------
+
+func handle_attack():
+	if can_attack():
+		state = STATE.ATTACK
+		last_attack_time = Time.get_ticks_msec() # <-- THIS IS THE FIX
+		handle_animations()
 
 func handle_gravity_and_jump() -> void:
 	if not is_on_floor():
@@ -227,10 +237,14 @@ func handle_movement(delta: float) -> void:
 # ----------------- HELPERS ------------------------
 # --------------------------------------------------
 
-
+func _on_animation_player_animation_finished(anim_name):
+	if anim_name == "GS_slash":
+		# Only return to IDLE if we weren't interrupted by death or hurt
+		if state != STATE.DEATH and state != STATE.HURT:
+			state = STATE.IDLE
 
 func can_move() -> bool:
-	return not (state in [STATE.HURT, STATE.DEATH, STATE.DASH_CHARGE])
+	return not (state in [STATE.HURT, STATE.DEATH, STATE.DASH_CHARGE, STATE.ATTACK])
 
 func can_dash():
 	return Time.get_ticks_msec() - last_dash_time >= dash_cooldown*1000
@@ -260,6 +274,7 @@ func start_dash() -> void:
 
 func handle_animations() -> void:
 	match state:
+		STATE.ATTACK: set_anim("GS_slash")
 		STATE.IDLE:        set_anim("mixamo_com")
 		STATE.WALK:        set_anim("walk")
 		STATE.RUN:         set_anim("run")
@@ -284,6 +299,17 @@ func show_trails() -> void:
 	if gpu_trail_3d:
 		gpu_trail_3d.visible = true
 		gpu_trail_3d.emitting = true
+
+# --- This is the new, more robust function ---
+func can_attack():
+	# Check if enough time has passed since the last attack
+	var is_cooldown_ready = Time.get_ticks_msec() - last_attack_time >= attack_cooldown * 1000
+	
+	# Check if we are in a state that allows attacking
+	var is_in_valid_state = state in [STATE.IDLE, STATE.WALK, STATE.RUN]
+	
+	return is_cooldown_ready and is_in_valid_state
+	
 
 func hide_trails() -> void:
 	if gpu_trail_3d:
