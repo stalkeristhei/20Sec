@@ -13,7 +13,7 @@ extends CharacterBody3D
 @export var DASH_MAX_SPEED: float = 25.0
 @export var DASH_DURATION: float = 0.3
 @export var ENEMY: CharacterBody3D
-
+@export var dash_cooldown:float= 0.5   #seconds
 const JUMP_VELOCITY: float = 4.5
 var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -32,6 +32,7 @@ var dash_charge_time: float = 0.0
 var dash_timer: float = 0.0
 var dash_direction: Vector3 = Vector3.ZERO
 var is_charging: bool = false
+var last_dash_time:float= 0.0
 
 # --- TARGETING ---
 var is_targeting: bool = false
@@ -53,6 +54,7 @@ func _input(event: InputEvent) -> void:
 		toggle_targeting()
 
 # Mouse handling
+# Mouse handling
 func handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	var dx = deg_to_rad(event.relative.x)
 	var dy = deg_to_rad(event.relative.y)
@@ -69,23 +71,41 @@ func handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	else:
 		# Free-look mode
 		rotate_y(-dx * mouse_sensitivity_x)
-		visuals.rotate_y(dx * mouse_sensitivity_x)
+		
+		# <-- REMOVE THIS LINE -->
+		# visuals.rotate_y(dx * mouse_sensitivity_x) # This conflicts with handle_movement
+		
 		camera_mount.rotate_x(-dy * mouse_sensitivity_y)
 
 		var x = clamp(camera_mount.rotation_degrees.x, -10, 20)
 		camera_mount.rotation_degrees = Vector3(x, 0, 0)
-
+# Toggle lock-on targeting
 # Toggle lock-on targeting
 func toggle_targeting() -> void:
 	is_targeting = !is_targeting
-	var x = camera_mount.rotation_degrees.x
-	camera_mount.rotation_degrees = Vector3(x, 0, 0)
-	if not is_targeting:
+	
+	# Get the camera's current rotation in RADIANS (for math)
+	var cam_rot_rad = camera_mount.rotation
+	
+	if is_targeting:
+		# --- JUST ENABLED TARGETING ---
+		# We are switching TO targeting.
+		# We should reset the camera mount's horizontal rotation, but keep the vertical.
+		camera_mount.rotation = Vector3(cam_rot_rad.x, 0, 0)
+	else:
+		# --- JUST DISABLED TARGETING ---
+		# This is where we fix the snap.
+		
+		# 1. Apply the camera's horizontal "nudge" (cam_rot_rad.y)
+		#    to the ENTIRE player body.
+		rotate_y(cam_rot_rad.y)
+		
+		# 2. Now that the body is rotated, reset the camera mount's
+		#    local rotation, keeping the vertical (x) component.
+		camera_mount.rotation = Vector3(cam_rot_rad.x, 0, 0)
+		
+		# 3. Reset the visuals to align with the newly rotated body.
 		visuals.transform.basis = Basis()
-
-# --------------------------------------------------
-# ---------------- PHYSICS -------------------------
-# --------------------------------------------------
 
 func _physics_process(delta: float) -> void:
 	handle_gravity_and_jump()
@@ -115,7 +135,7 @@ func handle_dash(delta: float) -> void:
 			move_and_slide()
 		return
 
-	if Input.is_action_just_pressed("Dash") and can_move():
+	if Input.is_action_just_pressed("Dash") and can_move() and can_dash():
 		state = STATE.DASH_CHARGE
 		is_charging = true
 		dash_charge_time = 0.0
@@ -127,6 +147,7 @@ func handle_dash(delta: float) -> void:
 			is_charging = false
 			start_dash()
 
+# --- TARGETING ROTATION ---
 # --- TARGETING ROTATION ---
 func handle_targeting_rotation(delta: float) -> void:
 	if not is_targeting:
@@ -140,15 +161,22 @@ func handle_targeting_rotation(delta: float) -> void:
 	var look_pos = Vector3(target_pos.x, global_position.y, target_pos.z)
 	var target_basis = transform.looking_at(look_pos, Vector3.UP).basis
 
+	# This line is correct and rotates the root body
 	transform.basis = transform.basis.slerp(target_basis, delta * targeting_speed)
-	visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
-
+	
+	# <-- REMOVE THIS LINE -->
+	# We no longer want this function to control the visuals.
+	# visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
+# --- MOVEMENT ---
 # --- MOVEMENT ---
 func handle_movement(delta: float) -> void:
 	if state == STATE.DASH:
+		if velocity.length_squared() > 0:
+			visuals.look_at(position + velocity.normalized())
 		return
-
+	
 	var input_dir = Input.get_vector("Left", "Right", "Fwd", "Bkwd")
+	# This correctly gets the world-space direction based on the root node's rotation
 	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var moving = direction != Vector3.ZERO
 	var running = Input.is_action_pressed("Sprint")
@@ -161,33 +189,54 @@ func handle_movement(delta: float) -> void:
 		)
 
 	if moving and can_move():
-		if not is_targeting:
-			visuals.look_at(position + direction)
+		# <-- MODIFIED SECTION START -->
+		# We removed the 'if not is_targeting:' check.
+		# Now, the visuals will ALWAYS look in the direction of movement.
+		visuals.look_at(position + direction)
+		# <-- MODIFIED SECTION END -->
+		
 		var speed = RUN_SPEED if running else SPEED
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
 	else:
+		# Not moving
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 		velocity.z = move_toward(velocity.z, 0, SPEED)
+		
+		# <-- ADDED SECTION -->
+		# If we are targeting BUT NOT moving, slerp the visuals
+		# back to face the target (i.e., align with the root node).
+		if is_targeting:
+			visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
+		# <-- ADDED SECTION END -->
 
 	move_and_slide()
-
 # --------------------------------------------------
 # ----------------- HELPERS ------------------------
 # --------------------------------------------------
 
+
+
 func can_move() -> bool:
 	return not (state in [STATE.HURT, STATE.DEATH, STATE.DASH_CHARGE])
 
+func can_dash():
+	return Time.get_ticks_msec() - last_dash_time >= dash_cooldown*1000
 func start_dash() -> void:
 	state = STATE.DASH
+	last_dash_time = Time.get_ticks_msec()
 	var charge_ratio = dash_charge_time / DASH_MAX_CHARGE_TIME
 	var dash_speed = lerp(DASH_MIN_SPEED, DASH_MAX_SPEED, charge_ratio)
 
 	var input_dir = Input.get_vector("Left", "Right", "Fwd", "Bkwd")
 	dash_direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	
 	if dash_direction == Vector3.ZERO:
-		dash_direction = -transform.basis.z.normalized()
+		# --- THIS IS THE FIX ---
+		# Dash in the direction the VISUALS are facing,
+		# not the root physics body.
+		dash_direction = -visuals.global_transform.basis.z.normalized()
+		# -----------------------
 
 	velocity = dash_direction * dash_speed
 	dash_timer = DASH_DURATION
