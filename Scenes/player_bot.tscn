@@ -1,8 +1,9 @@
-[gd_scene load_steps=19 format=4 uid="uid://dkgy4vepowl7l"]
+[gd_scene load_steps=20 format=4 uid="uid://dkgy4vepowl7l"]
 
 [ext_resource type="Script" uid="uid://pittvc6lerro" path="res://Scripts/player_bot.gd" id="1_2yl3m"]
 [ext_resource type="Animation" uid="uid://3qpxopss8uhb" path="res://Assets/player/run.res" id="2_jafn8"]
 [ext_resource type="PackedScene" uid="uid://c4k8kqjqcaap" path="res://Scenes/dashtrail.tscn" id="2_rpfsx"]
+[ext_resource type="PackedScene" uid="uid://cje62awmajpbc" path="res://Scenes/sword.tscn" id="3_xq46a"]
 [ext_resource type="Animation" uid="uid://ch5375sm8unhr" path="res://Assets/player/walk.res" id="3_yrvvx"]
 [ext_resource type="Animation" uid="uid://dtcowic46fqvh" path="res://Assets/player/dash.res" id="4_yrvvx"]
 
@@ -3891,6 +3892,14 @@ skin = SubResource("Skin_se8ir")
 [node name="GPUTrail3D" parent="visuals/Skeleton3D" instance=ExtResource("2_rpfsx")]
 transform = Transform3D(0.9275039, 0.32888034, -0.17769144, -0.3738135, 0.816016, -0.440887, -6.337814e-09, 0.47534788, 0.87979794, 0.29582414, 0.5190524, 0.45169213)
 scroll = Vector2(0.385, 0)
+
+[node name="BoneAttachment3D" type="BoneAttachment3D" parent="visuals/Skeleton3D"]
+transform = Transform3D(0.46931338, -0.006797135, 0.8830053, -0.8827225, -0.0300581, 0.46893167, 0.023353737, -0.99952483, -0.020106614, -0.32589883, 0.94725794, -0.097349495)
+bone_name = "mixamorig_RightHand"
+bone_idx = 10
+
+[node name="Sword_Low_Done" parent="visuals/Skeleton3D/BoneAttachment3D" instance=ExtResource("3_xq46a")]
+transform = Transform3D(-0.20280632, -0.15283656, 0.023142692, 0.13541913, -0.19407633, -0.09497878, 0.07453994, -0.06324833, 0.23551743, 0.29980186, 0.45305607, 0.13962835)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="visuals"]
 libraries = {
