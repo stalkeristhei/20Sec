@@ -13,7 +13,7 @@ extends CharacterBody3D
 @export var DASH_MAX_SPEED: float = 25.0
 @export var DASH_DURATION: float = 0.3
 @export var ENEMY: CharacterBody3D
-@export var dash_cooldown:float= 0.5   #seconds
+@export var dash_cooldown:float= 0.5    #seconds
 @export var attack_cooldown:float = 0.4
 const JUMP_VELOCITY: float = 4.5
 var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -23,6 +23,9 @@ var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var visuals: Node3D = $visuals
 @onready var camera_mount: Node3D = $"Camera Mount"
 @onready var animation_player: AnimationPlayer = $visuals/AnimationPlayer
+# --- NEW: COMBO TIMER ---
+# (Remember to add this node in the editor and connect its 'timeout' signal)
+@onready var combo_timer: Timer = $ComboTimer
 
 # --- STATES ---
 enum STATE { IDLE, WALK, RUN, DASH_CHARGE, DASH, ATTACK, HURT, DEATH }
@@ -35,6 +38,19 @@ var dash_direction: Vector3 = Vector3.ZERO
 var is_charging: bool = false
 var last_dash_time:float= 0.0
 var last_attack_time:float=0.0
+
+# --- NEW: COMBO SYSTEM VARIABLES ---
+var combo_step: int = 0
+var can_queue_next_combo: bool = false
+var is_attack_queued: bool = false
+
+# --- NEW: COMBO TIMINGS (in seconds) ---
+# These define when the combo window *opens* for each attack
+const COMBO_P1_WINDOW_START: float = 0.8  # During 1.4s anim
+const COMBO_P2_WINDOW_START: float = 0.4  # During 0.7s anim
+const COMBO_P3_WINDOW_START: float = 0.3  # During 0.5s anim
+
+
 # --- TARGETING ---
 var is_targeting: bool = false
 
@@ -55,8 +71,9 @@ func _input(event: InputEvent) -> void:
 		toggle_targeting()
 	
 	if event.is_action_pressed("Attack"):
+		# --- MODIFIED: Calls new combo-aware attack handler ---
 		handle_attack()
-# Mouse handling
+
 # Mouse handling
 func handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	var dx = deg_to_rad(event.relative.x)
@@ -74,59 +91,57 @@ func handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	else:
 		# Free-look mode
 		rotate_y(-dx * mouse_sensitivity_x)
-		
-		# <-- REMOVE THIS LINE -->
-		# visuals.rotate_y(dx * mouse_sensitivity_x) # This conflicts with handle_movement
-		
 		camera_mount.rotate_x(-dy * mouse_sensitivity_y)
 
 		var x = clamp(camera_mount.rotation_degrees.x, -10, 20)
 		camera_mount.rotation_degrees = Vector3(x, 0, 0)
-# Toggle lock-on targeting
+
 # Toggle lock-on targeting
 func toggle_targeting() -> void:
 	is_targeting = !is_targeting
 	
-	# Get the camera's current rotation in RADIANS (for math)
 	var cam_rot_rad = camera_mount.rotation
 	
 	if is_targeting:
-		# --- JUST ENABLED TARGETING ---
-		# We are switching TO targeting.
-		# We should reset the camera mount's horizontal rotation, but keep the vertical.
 		camera_mount.rotation = Vector3(cam_rot_rad.x, 0, 0)
 	else:
-		# --- JUST DISABLED TARGETING ---
-		# This is where we fix the snap.
-		
-		# 1. Apply the camera's horizontal "nudge" (cam_rot_rad.y)
-		#    to the ENTIRE player body.
 		rotate_y(cam_rot_rad.y)
-		
-		# 2. Now that the body is rotated, reset the camera mount's
-		#    local rotation, keeping the vertical (x) component.
 		camera_mount.rotation = Vector3(cam_rot_rad.x, 0, 0)
-		
-		# 3. Reset the visuals to align with the newly rotated body.
 		visuals.transform.basis = Basis()
 
 func _physics_process(delta: float) -> void:
 	handle_gravity_and_jump()
 	handle_dash(delta)
 	handle_targeting_rotation(delta)
-	handle_movement(delta)
-	handle_animations()
+
+# Only allow movement and animation updates if not attacking
+	if state != STATE.ATTACK:
+		handle_movement(delta)
+		handle_animations()
+
 
 
 # --------------------------------------------------
 # ---------------- CORE LOGIC ----------------------
 # --------------------------------------------------
 
+# --- MODIFIED: Handles both starting and continuing combos ---
 func handle_attack():
-	if can_attack():
+	if state == STATE.ATTACK:
+		# We are already attacking, check if we can queue the next move
+		if can_queue_next_combo:
+			is_attack_queued = true
+			# Prevent queueing multiple times
+			can_queue_next_combo = false 
+	
+	elif can_start_new_attack():
+		# We are starting a new combo from a non-attack state
 		state = STATE.ATTACK
-		last_attack_time = Time.get_ticks_msec() # <-- THIS IS THE FIX
-		handle_animations()
+		combo_step = 1
+		is_attack_queued = false
+		can_queue_next_combo = false
+		set_anim("sword_combo_p1") # This will also start the timer
+		# last_attack_time = Time.get_ticks_msec() # <-- REMOVE THIS LINE
 
 func handle_gravity_and_jump() -> void:
 	if not is_on_floor():
@@ -158,7 +173,6 @@ func handle_dash(delta: float) -> void:
 			start_dash()
 
 # --- TARGETING ROTATION ---
-# --- TARGETING ROTATION ---
 func handle_targeting_rotation(delta: float) -> void:
 	if not is_targeting:
 		return
@@ -171,31 +185,20 @@ func handle_targeting_rotation(delta: float) -> void:
 	var look_pos = Vector3(target_pos.x, global_position.y, target_pos.z)
 	var target_basis = transform.looking_at(look_pos, Vector3.UP).basis
 
-	# This line is correct and rotates the root body
 	transform.basis = transform.basis.slerp(target_basis, delta * targeting_speed)
 	
-	# <-- REMOVE THIS LINE -->
-	# We no longer want this function to control the visuals.
-	# visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
-# --- MOVEMENT ---
-# --- MOVEMENT ---
 # --- MOVEMENT ---
 func handle_movement(delta: float) -> void:
-	# --- 1. Handle Dash State ---
-	# (This is our previous fix: rotate visuals to face dash velocity)
 	if state == STATE.DASH:
 		if velocity.length_squared() > 0:
 			visuals.look_at(position + velocity.normalized())
 		return
 
-	# --- 2. Get Input ---
 	var input_dir = Input.get_vector("Left", "Right", "Fwd", "Bkwd")
-	# Get the world-space direction based on player's root rotation
 	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var moving = direction != Vector3.ZERO
 	var running = Input.is_action_pressed("Sprint")
 
-	# --- 3. Update State (if allowed) ---
 	if can_move():
 		state = (
 			STATE.RUN if moving and running else
@@ -203,51 +206,73 @@ func handle_movement(delta: float) -> void:
 			STATE.IDLE
 		)
 
-	# --- 4. Handle VISUALS Rotation (THE FIX) ---
 	if moving:
-		# If the player is holding ANY direction, make the visuals face that direction.
-		# This now works for walking, strafing, AND dash-charging.
 		visuals.look_at(position + direction)
-	
 	elif is_targeting:
-		# Player is NOT holding a direction, but IS targeting.
 		if state == STATE.DASH_CHARGE:
-			# We are charging a NEUTRAL dash.
-			# Do nothing. Keep visuals facing their current direction.
-			# This preserves the direction for the neutral dash.
 			pass
 		else:
-			# We are just standing still (IDLE).
-			# Slerp the visuals back to face the enemy.
 			visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
 
-	# --- 5. Handle VELOCITY (Movement) ---
-	# This part is unchanged and still respects can_move().
 	if moving and can_move():
 		var speed = RUN_SPEED if running else SPEED
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
 	else:
-		# Stop moving if we can't move or aren't pressing keys
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 		velocity.z = move_toward(velocity.z, 0, SPEED)
 
 	move_and_slide()
+	
 # --------------------------------------------------
 # ----------------- HELPERS ------------------------
 # --------------------------------------------------
 
+# --- MODIFIED: This is now the brain of the combo system ---
 func _on_animation_player_animation_finished(anim_name):
-	if anim_name == "GS_slash":
-		# Only return to IDLE if we weren't interrupted by death or hurt
+	# Check if the finished animation is part of our combo
+	if not (anim_name in ["sword_combo_p1", "sword_combo_p2", "sword_combo_p3"]):
+		return # Not a combo animation, do nothing.
+
+	# The animation finished, so the combo window is definitely closed.
+	combo_timer.stop()
+	can_queue_next_combo = false
+
+	if is_attack_queued:
+		# --- SUCCESS! Player queued the next attack ---
+		is_attack_queued = false # Reset the queue
+		
+		if anim_name == "sword_combo_p1":
+			combo_step = 2
+			set_anim("sword_combo_p2")
+		elif anim_name == "sword_combo_p2":
+			combo_step = 3
+			set_anim("sword_combo_p3")
+		elif anim_name == "sword_combo_p3":
+			# Loop back to the first attack
+			combo_step = 1
+			set_anim("sword_combo_p1")
+			
+	else:
+		# --- FAILED! Player did not queue, combo is broken ---
+		combo_step = 0
 		if state != STATE.DEATH and state != STATE.HURT:
 			state = STATE.IDLE
+		
+		# Start the attack cooldown *now*, after the last attack finished
+		last_attack_time = Time.get_ticks_msec()
+
 
 func can_move() -> bool:
-	return not (state in [STATE.HURT, STATE.DEATH, STATE.DASH_CHARGE, STATE.ATTACK])
+	# --- MODIFIED: No longer check for STATE.ATTACK ---
+	# We can still move during the *startup* of an attack,
+	# but the animation itself will lock us (which is handled by can_move checks
+	# in handle_movement)
+	return not (state in [STATE.HURT, STATE.DEATH, STATE.DASH_CHARGE]) # <-- ATTACK removed
 
 func can_dash():
 	return Time.get_ticks_msec() - last_dash_time >= dash_cooldown*1000
+	
 func start_dash() -> void:
 	state = STATE.DASH
 	last_dash_time = Time.get_ticks_msec()
@@ -258,11 +283,7 @@ func start_dash() -> void:
 	dash_direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	
 	if dash_direction == Vector3.ZERO:
-		# --- THIS IS THE FIX ---
-		# Dash in the direction the VISUALS are facing,
-		# not the root physics body.
 		dash_direction = -visuals.global_transform.basis.z.normalized()
-		# -----------------------
 
 	velocity = dash_direction * dash_speed
 	dash_timer = DASH_DURATION
@@ -274,7 +295,9 @@ func start_dash() -> void:
 
 func handle_animations() -> void:
 	match state:
-		STATE.ATTACK: set_anim("GS_slash")
+		# --- MODIFIED: ATTACK state removed from here ---
+		# Attack animations are now "sticky" and are set by
+		# handle_attack() and _on_animation_player_animation_finished()
 		STATE.IDLE:        set_anim("mixamo_com")
 		STATE.WALK:        set_anim("walk")
 		STATE.RUN:         set_anim("run")
@@ -285,11 +308,28 @@ func handle_animations() -> void:
 			set_anim("dash_mid_end")
 			show_trails()
 			return
-	hide_trails()
+	
+	# Hide trails if not in a state that uses them (like DASH)
+	# This check prevents us from hiding trails *during* the attack anim
+	if state != STATE.ATTACK:
+		hide_trails()
 
+# --- MODIFIED: Now starts the combo timer ---
 func set_anim(anim: String) -> void:
 	if animation_player.current_animation != anim:
 		animation_player.play(anim)
+
+	# --- NEW: Start combo timer based on which attack is playing ---
+	combo_timer.stop() # Stop any previous timer
+	can_queue_next_combo = false # Window is closed by default
+	
+	if anim == "sword_combo_p1":
+		combo_timer.start(COMBO_P1_WINDOW_START)
+	elif anim == "sword_combo_p2":
+		combo_timer.start(COMBO_P2_WINDOW_START)
+	elif anim == "sword_combo_p3":
+		combo_timer.start(COMBO_P3_WINDOW_START)
+
 
 # --------------------------------------------------
 # ---------------- TRAILS --------------------------
@@ -300,16 +340,21 @@ func show_trails() -> void:
 		gpu_trail_3d.visible = true
 		gpu_trail_3d.emitting = true
 
-# --- This is the new, more robust function ---
-func can_attack():
-	# Check if enough time has passed since the last attack
+# --- MODIFIED: Renamed to be more specific ---
+func can_start_new_attack():
+	# Check if enough time has passed since the last attack *combo finished*
 	var is_cooldown_ready = Time.get_ticks_msec() - last_attack_time >= attack_cooldown * 1000
 	
-	# Check if we are in a state that allows attacking
+	# Check if we are in a state that allows starting a new attack
 	var is_in_valid_state = state in [STATE.IDLE, STATE.WALK, STATE.RUN]
 	
 	return is_cooldown_ready and is_in_valid_state
 	
+# --- NEW: This is the signal callback for the ComboTimer ---
+func _on_combo_timer_timeout():
+	# The timer fired, which means the combo window is NOW OPEN
+	can_queue_next_combo = true
+
 
 func hide_trails() -> void:
 	if gpu_trail_3d:
