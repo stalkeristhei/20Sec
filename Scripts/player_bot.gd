@@ -360,3 +360,8 @@ func hide_trails() -> void:
 	if gpu_trail_3d:
 		gpu_trail_3d.emitting = false
 		gpu_trail_3d.visible = false
+
+
+func attack_connected():
+	Global.frame_freeze(0.1, 0.2)
+	
