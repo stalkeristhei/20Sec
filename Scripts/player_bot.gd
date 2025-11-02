@@ -169,18 +169,23 @@ func handle_targeting_rotation(delta: float) -> void:
 	# visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
 # --- MOVEMENT ---
 # --- MOVEMENT ---
+# --- MOVEMENT ---
 func handle_movement(delta: float) -> void:
+	# --- 1. Handle Dash State ---
+	# (This is our previous fix: rotate visuals to face dash velocity)
 	if state == STATE.DASH:
 		if velocity.length_squared() > 0:
 			visuals.look_at(position + velocity.normalized())
 		return
-	
+
+	# --- 2. Get Input ---
 	var input_dir = Input.get_vector("Left", "Right", "Fwd", "Bkwd")
-	# This correctly gets the world-space direction based on the root node's rotation
+	# Get the world-space direction based on player's root rotation
 	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var moving = direction != Vector3.ZERO
 	var running = Input.is_action_pressed("Sprint")
 
+	# --- 3. Update State (if allowed) ---
 	if can_move():
 		state = (
 			STATE.RUN if moving and running else
@@ -188,27 +193,34 @@ func handle_movement(delta: float) -> void:
 			STATE.IDLE
 		)
 
-	if moving and can_move():
-		# <-- MODIFIED SECTION START -->
-		# We removed the 'if not is_targeting:' check.
-		# Now, the visuals will ALWAYS look in the direction of movement.
+	# --- 4. Handle VISUALS Rotation (THE FIX) ---
+	if moving:
+		# If the player is holding ANY direction, make the visuals face that direction.
+		# This now works for walking, strafing, AND dash-charging.
 		visuals.look_at(position + direction)
-		# <-- MODIFIED SECTION END -->
-		
+	
+	elif is_targeting:
+		# Player is NOT holding a direction, but IS targeting.
+		if state == STATE.DASH_CHARGE:
+			# We are charging a NEUTRAL dash.
+			# Do nothing. Keep visuals facing their current direction.
+			# This preserves the direction for the neutral dash.
+			pass
+		else:
+			# We are just standing still (IDLE).
+			# Slerp the visuals back to face the enemy.
+			visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
+
+	# --- 5. Handle VELOCITY (Movement) ---
+	# This part is unchanged and still respects can_move().
+	if moving and can_move():
 		var speed = RUN_SPEED if running else SPEED
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed
 	else:
-		# Not moving
+		# Stop moving if we can't move or aren't pressing keys
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 		velocity.z = move_toward(velocity.z, 0, SPEED)
-		
-		# <-- ADDED SECTION -->
-		# If we are targeting BUT NOT moving, slerp the visuals
-		# back to face the target (i.e., align with the root node).
-		if is_targeting:
-			visuals.transform.basis = visuals.transform.basis.slerp(Basis(), delta * targeting_speed)
-		# <-- ADDED SECTION END -->
 
 	move_and_slide()
 # --------------------------------------------------
