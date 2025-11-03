@@ -1,8 +1,16 @@
 class_name Player
 
 extends CharacterBody3D
+#
+## --- SETTINGS ---
+#@export var afterimage_count := 5
+#@export var afterimage_spacing := 0.05
+#@export var afterimage_fade_time := 0.3
+#@export var afterimage_color := Color(1, 1, 1, 0.5)
 
-# --- SETTINGS ---
+
+var afterimage_timer := 0.0
+
 @export var mouse_sensitivity_x: float = 0.5
 @export var mouse_sensitivity_y: float = 0.5
 @export_range(0, 90, 1) var target_vertical_nudge_limit: float = 20.0
@@ -134,6 +142,12 @@ func _physics_process(delta: float) -> void:
 	if state != STATE.ATTACK:
 		handle_movement(delta)
 		handle_animations()
+	#if state == STATE.DASH:
+		#afterimage_timer -= delta
+	#if afterimage_timer <= 0.0:
+			#create_afterimage()
+			#afterimage_timer = afterimage_spacing
+
 
 # --------------------------------------------------
 # ---------------- CORE LOGIC ----------------------
@@ -428,3 +442,35 @@ func hit_or_miss_camera_shake():#this function is being called via the animation
 	else:
 		print("attack_not_connected")
 		small_camera_shake()
+
+#
+#func create_afterimage():
+	#if not visuals:
+		#return
+#
+	#var ghost := visuals.duplicate()
+	#get_tree().current_scene.add_child(ghost)
+	#ghost.global_transform = visuals.global_transform
+#
+	## Stop any active animations
+	#if ghost.has_node("AnimationPlayer"):
+		#ghost.get_node("AnimationPlayer").stop()
+#
+	## Collect all mesh children of the ghost
+	#var mesh_list: Array = []
+	#for child in ghost.get_children():
+		#if child is MeshInstance3D:
+			#mesh_list.append(child)
+#
+	## Apply transparent color and start fade
+	#for mesh in mesh_list:
+		#mesh.modulate = Color(afterimage_color.r, afterimage_color.g, afterimage_color.b, 1.0)
+		#var tween :Tween= mesh.create_tween()
+		#tween.tween_property(mesh, "modulate:a", 0.0, afterimage_fade_time)
+#
+	## Clean up ghost node after fade completes
+	#var cleanup_timer := get_tree().create_timer(afterimage_fade_time)
+	#cleanup_timer.timeout.connect(func():
+		#if is_instance_valid(ghost):
+			#ghost.queue_free()
+	#)
