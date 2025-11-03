@@ -98,3 +98,4 @@ player = NodePath("../Player")
 [node name="Player" parent="." node_paths=PackedStringArray("ENEMY") instance=ExtResource("4_fo5ed")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.128439, 0.33506986, 0.7053971)
 ENEMY = NodePath("../bos2")
+ATTACK_SPEED = 2.355

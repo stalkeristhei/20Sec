@@ -17,6 +17,7 @@ extends CharacterBody3D
 @export var ENEMY: CharacterBody3D
 @export var dash_cooldown:float= 0.5	#seconds
 @export var attack_cooldown:float = 0.4
+@export var ATTACK_SPEED:float=1
 const JUMP_VELOCITY: float = 4.5
 var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -193,7 +194,7 @@ func handle_targeting_rotation(delta: float) -> void:
 	var look_pos = Vector3(target_pos.x, global_position.y, target_pos.z)
 	var target_basis = transform.looking_at(look_pos, Vector3.UP).basis
 
-	transform.basis = transform.basis.slerp(target_basis, delta * targeting_speed)
+	transform.basis = transform.basis.slerp(target_basis, delta * targeting_speed).orthonormalized()
 	
 # --- MOVEMENT ---
 func handle_movement(delta: float) -> void:
@@ -307,18 +308,29 @@ func handle_animations() -> void:
 		hide_trails()
 
 func set_anim(anim: String) -> void:
+	# Only play if it's not already playing
 	if animation_player.current_animation != anim:
 		animation_player.play(anim)
-
-	combo_timer.stop() 
-	can_queue_next_combo = false 
 	
-	if anim == "sword_combo_p1":
-		combo_timer.start(COMBO_P1_WINDOW_START)
-	elif anim == "sword_combo_p2":
-		combo_timer.start(COMBO_P2_WINDOW_START)
-	elif anim == "sword_combo_p3":
-		combo_timer.start(COMBO_P3_WINDOW_START)
+	# --- APPLY ATTACK SPEED SCALING ---
+	if anim in ["sword_combo_p1", "sword_combo_p2", "sword_combo_p3"]:
+		animation_player.speed_scale = ATTACK_SPEED
+	else:
+		animation_player.speed_scale = 1.0
+	# --- END SPEED CONTROL ---
+
+	# Handle combo timing
+	combo_timer.stop()
+	can_queue_next_combo = false
+	
+	if anim in ["sword_combo_p1", "sword_combo_p2", "sword_combo_p3"]:
+		var speed_scale = ATTACK_SPEED
+		if anim == "sword_combo_p1":
+			combo_timer.start(COMBO_P1_WINDOW_START/speed_scale)
+		elif anim == "sword_combo_p2":
+			combo_timer.start(COMBO_P2_WINDOW_START/speed_scale)
+		elif anim == "sword_combo_p3":
+			combo_timer.start(COMBO_P3_WINDOW_START/speed_scale)
 
 
 # --------------------------------------------------
