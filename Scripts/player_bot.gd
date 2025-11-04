@@ -2,11 +2,11 @@ class_name Player
 
 extends CharacterBody3D
 #
-## --- SETTINGS ---
-#@export var afterimage_count := 5
-#@export var afterimage_spacing := 0.05
-#@export var afterimage_fade_time := 0.3
-#@export var afterimage_color := Color(1, 1, 1, 0.5)
+# --- SETTINGS ---
+@export var afterimage_count := 5
+@export var afterimage_spacing := 0.05
+@export var afterimage_fade_time := 0.3
+@export var afterimage_color := Color(1, 1, 1, 0.5)
 
 
 var afterimage_timer := 0.0
@@ -76,7 +76,6 @@ var is_attack_connected:bool=false
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hide_trails()
-	
 	# --- NEW: Store original camera position for shake reset ---
 	if camera_node:
 		original_cam_pos = camera_node.position
@@ -142,11 +141,11 @@ func _physics_process(delta: float) -> void:
 	if state != STATE.ATTACK:
 		handle_movement(delta)
 		handle_animations()
-	#if state == STATE.DASH:
-		#afterimage_timer -= delta
-	#if afterimage_timer <= 0.0:
-			#create_afterimage()
-			#afterimage_timer = afterimage_spacing
+	if state == STATE.DASH:
+		afterimage_timer -= delta
+	if afterimage_timer <= 0.0:
+			create_afterimage()
+			afterimage_timer = afterimage_spacing
 
 
 # --------------------------------------------------
@@ -299,6 +298,7 @@ func start_dash() -> void:
 
 	velocity = dash_direction * dash_speed
 	dash_timer = DASH_DURATION
+	start_camera_shake(0.07, DASH_DURATION)  # strength = 0.05, duration = 0.2s
 	handle_animations()
 
 # --------------------------------------------------
@@ -443,34 +443,72 @@ func hit_or_miss_camera_shake():#this function is being called via the animation
 		print("attack_not_connected")
 		small_camera_shake()
 
-#
-#func create_afterimage():
-	#if not visuals:
-		#return
-#
-	#var ghost := visuals.duplicate()
-	#get_tree().current_scene.add_child(ghost)
-	#ghost.global_transform = visuals.global_transform
-#
-	## Stop any active animations
-	#if ghost.has_node("AnimationPlayer"):
-		#ghost.get_node("AnimationPlayer").stop()
-#
-	## Collect all mesh children of the ghost
-	#var mesh_list: Array = []
-	#for child in ghost.get_children():
-		#if child is MeshInstance3D:
-			#mesh_list.append(child)
-#
-	## Apply transparent color and start fade
-	#for mesh in mesh_list:
-		#mesh.modulate = Color(afterimage_color.r, afterimage_color.g, afterimage_color.b, 1.0)
-		#var tween :Tween= mesh.create_tween()
-		#tween.tween_property(mesh, "modulate:a", 0.0, afterimage_fade_time)
-#
-	## Clean up ghost node after fade completes
-	#var cleanup_timer := get_tree().create_timer(afterimage_fade_time)
-	#cleanup_timer.timeout.connect(func():
-		#if is_instance_valid(ghost):
-			#ghost.queue_free()
-	#)
+
+
+
+func create_afterimage():
+	if not visuals:
+		return
+
+	var ghost := visuals.duplicate()
+	get_tree().current_scene.add_child(ghost)
+	ghost.global_transform = visuals.global_transform
+
+	if ghost.has_node("AnimationPlayer"):
+		ghost.get_node("AnimationPlayer").stop()
+
+	var ghost_tween := create_tween()
+	var mesh_list: Array = []
+	find_meshes_recursively(ghost, mesh_list)
+
+	if mesh_list.is_empty():
+		print("create_afterimage: WARNING - No MeshInstance3D nodes found.")
+		if is_instance_valid(ghost):
+			ghost.queue_free()
+		return
+
+	print("--- create_afterimage: Processing meshes... ---")
+	for mesh in mesh_list:
+		if mesh is MeshInstance3D:
+			print("  On Mesh: ", mesh.name)
+			
+			for i in range(mesh.get_surface_override_material_count()):
+				var active_material = mesh.get_active_material(i)
+				if not active_material:
+					print("    -> Surface %s has no material. Skipping." % i)
+					continue
+				
+				print("    -> Found material: '%s' on surface %s" % [active_material.resource_name, i])
+
+				# Duplicate material and assign it
+				var unique_material = active_material.duplicate()
+				mesh.set_surface_override_material(i, unique_material)
+				unique_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				unique_material.flags_transparent = true
+
+				
+				# Start color = base color blended with afterimage tint
+				var start_color = unique_material.albedo_color.lerp(afterimage_color, 0.7)
+				start_color.a = afterimage_color.a
+				
+				# End color fades out fully transparent
+				var end_color = start_color
+				end_color.a = 0.0
+
+				unique_material.albedo_color = start_color
+
+				# Tween transparency over time
+				ghost_tween.tween_property(unique_material, "albedo_color", end_color, afterimage_fade_time)
+
+	# Cleanup ghost when fade completes
+	ghost_tween.finished.connect(func():
+		if is_instance_valid(ghost):
+			ghost.queue_free()
+	)
+
+# Recursive mesh finder
+func find_meshes_recursively(node, mesh_list: Array):
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			mesh_list.append(child)
+		find_meshes_recursively(child, mesh_list)
