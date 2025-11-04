@@ -4585,6 +4585,7 @@ _data = {
 [node name="Node3D" type="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.13732052)
 script = ExtResource("1_2yl3m")
+afterimage_fade_time = 0.165
 afterimage_color = Color(1, 1, 1, 0.254)
 target_vertical_nudge_limit = 10.0
 
