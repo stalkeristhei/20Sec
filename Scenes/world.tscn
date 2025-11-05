@@ -92,7 +92,7 @@ radius = 3.921875
 height = 7.370117
 
 [node name="bos2" parent="." node_paths=PackedStringArray("player") instance=ExtResource("4_8j60k")]
-transform = Transform3D(1.7, 0, 0, 0, 1.7, 0, 0, 0, 1.7, 2.407247, 0.31275058, 5.9856935)
+transform = Transform3D(1.7, 0, 0, 0, 1.7, 0, 0, 0, 1.7, 2.4816818, 0.024722219, 5.883775)
 player = NodePath("../Player")
 
 [node name="Player" parent="." node_paths=PackedStringArray("ENEMY") instance=ExtResource("4_fo5ed")]
@@ -101,5 +101,5 @@ DASH_MAX_CHARGE_TIME = 1.0
 DASH_MIN_SPEED = 5.0
 DASH_MAX_SPEED = 55.0
 ENEMY = NodePath("../bos2")
-dash_cooldown = 0.17
+dash_cooldown = 1.05
 ATTACK_SPEED = 2.355

@@ -9,7 +9,7 @@
 shader = ExtResource("1_gefmm")
 
 [sub_resource type="Gradient" id="Gradient_mglt7"]
-colors = PackedColorArray(0, 273323.38, 348446.03, 1, 0, 0, 0, 0)
+colors = PackedColorArray(6.761721e-08, 0.08012364, 0.1172622, 1, 0, 0, 0, 0)
 
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_2jtx5"]
 gradient = SubResource("Gradient_mglt7")
@@ -28,7 +28,7 @@ resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("2_d7bl5")
 shader_parameter/tex = ExtResource("3_6gtgw")
-shader_parameter/uv_offset = Vector2(0.3943399, 0)
+shader_parameter/uv_offset = Vector2(0.32375643, 0)
 shader_parameter/color_ramp = SubResource("GradientTexture1D_2jtx5")
 shader_parameter/curve = SubResource("CurveTexture_wtyah")
 shader_parameter/emmission_transform = Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)

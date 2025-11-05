@@ -8,15 +8,16 @@ extends CharacterBody3D
 @export var RUN_SPEED: float = 3.5
 @export var GRAVITY: float = 9.8
 @export var ATTACK_RANGE: float = 4.0
-@export var RUN_RANGE: float = 10.0  # Start running when within this range
+@export var RUN_RANGE: float = 10.0 # Start running when within this range
 
 enum STATE { WALK, RUN, JUMP_ATTACK, SLASH }
 var state: STATE = STATE.WALK
 
+
 func _ready() -> void:
 	animation_tree.active = true
 	animation_tree.animation_finished.connect(_on_animation_finished)
-	randomize()  # Seed RNG for attack randomness
+	randomize() # Seed RNG for attack randomness
 
 
 func _physics_process(delta: float) -> void:
@@ -61,9 +62,11 @@ func _physics_process(delta: float) -> void:
 			# --- State transitions (FIXED) ---
 			if distance_to_player < ATTACK_RANGE:
 				choose_attack()
-			elif distance_to_player < RUN_RANGE and state!=STATE.RUN: # Player is close, so WALK
+			elif distance_to_player < RUN_RANGE and state != STATE.RUN:
+				# Player is close, so WALK
 				state = STATE.WALK
-			else: # Player is far, so RUN
+			else:
+				# Player is far, so RUN
 				state = STATE.RUN
 
 		STATE.JUMP_ATTACK, STATE.SLASH:
@@ -75,6 +78,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	handle_animations()
 	update_animation(self.velocity)
+
 
 # --- Random attack chooser ---
 func choose_attack() -> void:

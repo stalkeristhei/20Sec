@@ -30,6 +30,7 @@ const JUMP_VELOCITY: float = 4.5
 var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 # --- NODES ---
+@onready var dash_audio: AudioStreamPlayer3D = $dash_audio
 @onready var gpu_trail_3d: GPUTrail3D = $visuals/Skeleton3D/GPUTrail3D
 @onready var visuals: Node3D = $visuals
 @onready var camera_mount: Node3D = $"Camera Mount"
@@ -175,12 +176,25 @@ func handle_gravity_and_jump() -> void:
 func handle_dash(delta: float) -> void:
 	if state == STATE.DASH:
 		dash_timer -= delta
-		if dash_timer <= 0:
+
+		# --- End dash audio slightly before dash ends ---
+		if dash_timer <= 0.3 and dash_audio.playing:  # end 0.1s before actual dash end
+			var fade_out := create_tween()
+			fade_out.tween_property(dash_audio, "volume_db", -40.0, 0.3)
+			fade_out.finished.connect(func():
+				if dash_audio.playing:
+					dash_audio.stop()
+				dash_audio.volume_db = 0.0
+			)
+
+		# --- When dash fully ends ---
+		if dash_timer <= 0.0:
 			state = STATE.IDLE
 			velocity = Vector3.ZERO
 		else:
 			move_and_slide()
 		return
+
 
 	if Input.is_action_just_pressed("Dash") and can_move() and can_dash():
 		state = STATE.DASH_CHARGE
@@ -286,6 +300,9 @@ func can_dash():
 	
 func start_dash() -> void:
 	state = STATE.DASH
+	dash_audio.pitch_scale = randf_range(0.87, 1.17)
+	#the dash audio is 2.6 sec lon i want it to end when my dashg ends
+	dash_audio.play()
 	last_dash_time = Time.get_ticks_msec()
 	var charge_ratio = dash_charge_time / DASH_MAX_CHARGE_TIME
 	var dash_speed = lerp(DASH_MIN_SPEED, DASH_MAX_SPEED, charge_ratio)
@@ -442,73 +459,84 @@ func hit_or_miss_camera_shake():#this function is being called via the animation
 	else:
 		print("attack_not_connected")
 		small_camera_shake()
-
-
-
-
-func create_afterimage():
+func create_afterimage() -> void:
 	if not visuals:
 		return
 
-	var ghost := visuals.duplicate()
-	get_tree().current_scene.add_child(ghost)
+	# --- Duplicate and position ghost ---
+	var ghost: Node3D = visuals.duplicate()
 	ghost.global_transform = visuals.global_transform
+	get_tree().current_scene.add_child(ghost)
 
+	# --- Fix: Copy current animated pose so ghost matches current frame ---
+	if visuals.has_node("Skeleton3D") and ghost.has_node("Skeleton3D"):
+		var orig_skel: Skeleton3D = visuals.get_node("Skeleton3D")
+		var ghost_skel: Skeleton3D = ghost.get_node("Skeleton3D")
+		for i in range(orig_skel.get_bone_count()):
+			ghost_skel.set_bone_global_pose_override(
+				i,
+				orig_skel.get_bone_global_pose(i),
+				1.0,
+				true
+			)
+
+	# Stop animations to freeze the snapshot
 	if ghost.has_node("AnimationPlayer"):
 		ghost.get_node("AnimationPlayer").stop()
 
-	var ghost_tween := create_tween()
-	var mesh_list: Array = []
-	find_meshes_recursively(ghost, mesh_list)
+	# --- Collect all meshes recursively ---
+	var mesh_list: Array[MeshInstance3D] = []
+	_find_meshes_recursively(ghost, mesh_list)
 
 	if mesh_list.is_empty():
-		print("create_afterimage: WARNING - No MeshInstance3D nodes found.")
 		if is_instance_valid(ghost):
 			ghost.queue_free()
 		return
 
-	print("--- create_afterimage: Processing meshes... ---")
-	for mesh in mesh_list:
-		if mesh is MeshInstance3D:
-			print("  On Mesh: ", mesh.name)
-			
-			for i in range(mesh.get_surface_override_material_count()):
-				var active_material = mesh.get_active_material(i)
-				if not active_material:
-					print("    -> Surface %s has no material. Skipping." % i)
-					continue
-				
-				print("    -> Found material: '%s' on surface %s" % [active_material.resource_name, i])
+	# --- Fade setup ---
+	var ghost_tween: Tween = create_tween()
 
-				# Duplicate material and assign it
-				var unique_material = active_material.duplicate()
-				mesh.set_surface_override_material(i, unique_material)
-				unique_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-				unique_material.flags_transparent = true
+	for mesh: MeshInstance3D in mesh_list:
+		for surface in range(mesh.get_surface_override_material_count()):
+			var active_material: Material = mesh.get_active_material(surface)
+			if active_material == null:
+				continue
 
-				
-				# Start color = base color blended with afterimage tint
-				var start_color = unique_material.albedo_color.lerp(afterimage_color, 0.7)
-				start_color.a = afterimage_color.a
-				
-				# End color fades out fully transparent
-				var end_color = start_color
-				end_color.a = 0.0
+			# Duplicate to make material instance unique
+			var fade_mat: BaseMaterial3D = active_material.duplicate()
+			mesh.set_surface_override_material(surface, fade_mat)
 
-				unique_material.albedo_color = start_color
+			# Enable alpha blending
+			fade_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			fade_mat.flags_transparent = true
 
-				# Tween transparency over time
-				ghost_tween.tween_property(unique_material, "albedo_color", end_color, afterimage_fade_time)
+			# --- Compute fade colors ---
+			var start_color: Color = fade_mat.albedo_color.lerp(afterimage_color, 0.7)
+			start_color.a = afterimage_color.a
 
-	# Cleanup ghost when fade completes
+			var end_color: Color = start_color
+			end_color.a = 0.0
+
+			fade_mat.albedo_color = start_color
+
+			# --- Tween fade effect ---
+			ghost_tween.tween_property(
+				fade_mat,
+				"albedo_color",
+				end_color,
+				afterimage_fade_time
+			)
+
+	# --- Cleanup when fade completes ---
 	ghost_tween.finished.connect(func():
 		if is_instance_valid(ghost):
 			ghost.queue_free()
 	)
 
-# Recursive mesh finder
-func find_meshes_recursively(node, mesh_list: Array):
+
+# --- Recursive mesh finder ---
+func _find_meshes_recursively(node: Node, mesh_list: Array[MeshInstance3D]) -> void:
 	for child in node.get_children():
 		if child is MeshInstance3D:
 			mesh_list.append(child)
-		find_meshes_recursively(child, mesh_list)
+		_find_meshes_recursively(child, mesh_list)
