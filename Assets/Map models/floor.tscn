@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=4 uid="uid://c03agsfiakvvw"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yv8hh"]
+resource_name = "Material.001"
+vertex_color_use_as_albedo = true
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_xnfr2"]
+_surfaces = [{
+"aabb": AABB(-0.015, -0.015, -0.0033101372, 0.03, 0.03, 0.0033101372),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwABAAAAAgAEAAAAAQADAAUABQACAAEABgAEAAIAAgAFAAYABwAAAAQAAAAHAAMABAAGAAcABQADAAcABwAGAAUA"),
+"name": "Material.001",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("j8J1PI/CdTwAAAAAj8J1vI/CdTwAAAAAj8J1vI/CdbwAAAAAj8J1vI/CdTzj7li7j8J1PI/CdbwAAAAAj8J1vI/Cdbzj7li7j8J1PI/Cdbzj7li7j8J1PI/CdTzj7li7")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_s3kp8"]
+resource_name = "Plane_001"
+_surfaces = [{
+"aabb": AABB(-0.015, -0.015, -0.0033101372, 0.03, 0.03, 0.0033101372),
+"attribute_data": PackedByteArray("AACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AACAPwAAgD8AAIA/AAAAAAAAgD8AAIA/AAAAAAAAgD8AAAAAAAAAAAAAgD8AAIA/AACAPwAAgD8AAAAAAACAPwAAAAAAAIA/AACAPwAAAAAAAIA/AAAAAAAAgD8AAIA/AACAPwAAgD8AAAAAAACAPwAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAgD8AAAAA"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_yv8hh"),
+"name": "Material.001",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("j8J1PI/CdTwAAAAAj8J1vI/CdTwAAAAAj8J1vI/CdbwAAAAAj8J1PI/CdbwAAAAAj8J1PI/CdTzj7li7j8J1PI/Cdbzj7li7j8J1vI/Cdbzj7li7j8J1vI/CdTzj7li7j8J1PI/Cdbzj7li7j8J1PI/CdbwAAAAAj8J1vI/CdbwAAAAAj8J1vI/Cdbzj7li7j8J1PI/CdTzj7li7j8J1PI/CdTwAAAAAj8J1PI/CdbwAAAAAj8J1PI/Cdbzj7li7j8J1vI/Cdbzj7li7j8J1vI/CdbwAAAAAj8J1vI/CdTwAAAAAj8J1vI/CdTzj7li7j8J1vI/CdTzj7li7j8J1vI/CdTwAAAAAj8J1PI/CdTwAAAAAj8J1PI/CdTzj7li7/////////z//////////P/////////8//////////z//f/9/////v/9//3////+//3//f////7//f/9/////v/9///////+//3///////7//f///////v/9///////+/AAD/f////78AAP9/////vwAA/3////+/AAD/f////7////9/////v////3////+/////f////7////9/////v/9/AAD///+//38AAP///7//fwAA////v/9/AAD///+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_xnfr2")
+
+[node name="Floor" type="MeshInstance3D"]
+transform = Transform3D(300, 0, 0, 0, -3.5762787e-05, 299.99997, 0, -299.99997, -3.5762787e-05, 0, 0, 0)
+mesh = SubResource("ArrayMesh_s3kp8")
+skeleton = NodePath("")

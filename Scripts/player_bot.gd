@@ -342,7 +342,8 @@ func start_dash() -> void:
 
 	velocity = dash_direction * dash_speed
 	dash_timer = DASH_DURATION
-	start_camera_shake(0.5, DASH_DURATION)
+	start_camera_shake(0.6, DASH_DURATION)
+	#Global.frame_freeze(.0, .03)
 	handle_animations()
 
 	# Cancel any old FOV tween
