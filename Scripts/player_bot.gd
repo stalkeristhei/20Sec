@@ -10,6 +10,7 @@ extends CharacterBody3D
 
 
 var afterimage_timer := 0.0
+var current_fov_tween: Tween
 
 @export var mouse_sensitivity_x: float = 0.5
 @export var mouse_sensitivity_y: float = 0.5
@@ -28,6 +29,8 @@ var afterimage_timer := 0.0
 @export var ATTACK_SPEED:float=1
 const JUMP_VELOCITY: float = 4.5
 var GRAVITY: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+@export var dash_charge_camera_fov:float = 120.0
 
 # --- NODES ---
 @onready var dash_audio: AudioStreamPlayer3D = $dash_audio
@@ -51,6 +54,7 @@ var dash_direction: Vector3 = Vector3.ZERO
 var is_charging: bool = false
 var last_dash_time:float= 0.0
 var last_attack_time:float=0.0
+var base_camera_fov:float
 
 # --- COMBO SYSTEM VARIABLES ---
 var combo_step: int = 0
@@ -75,6 +79,7 @@ var is_attack_connected:bool=false
 # --------------------------------------------------
 
 func _ready() -> void:
+	base_camera_fov = camera_node.fov
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hide_trails()
 	# --- NEW: Store original camera position for shake reset ---
@@ -172,13 +177,13 @@ func handle_gravity_and_jump() -> void:
 	elif Input.is_action_just_pressed("Jump"):
 		velocity.y = JUMP_VELOCITY
 
-# --- DASH LOGIC ---
 func handle_dash(delta: float) -> void:
+	# --- ACTIVE DASH PHASE ---
 	if state == STATE.DASH:
 		dash_timer -= delta
 
-		# --- End dash audio slightly before dash ends ---
-		if dash_timer <= 0.3 and dash_audio.playing:  # end 0.1s before actual dash end
+		# Fade out dash audio slightly before dash ends
+		if dash_timer <= 0.3 and dash_audio.playing:
 			var fade_out := create_tween()
 			fade_out.tween_property(dash_audio, "volume_db", -40.0, 0.3)
 			fade_out.finished.connect(func():
@@ -187,7 +192,7 @@ func handle_dash(delta: float) -> void:
 				dash_audio.volume_db = 0.0
 			)
 
-		# --- When dash fully ends ---
+		# End dash
 		if dash_timer <= 0.0:
 			state = STATE.IDLE
 			velocity = Vector3.ZERO
@@ -196,17 +201,40 @@ func handle_dash(delta: float) -> void:
 		return
 
 
+# --- START CHARGING ---
 	if Input.is_action_just_pressed("Dash") and can_move() and can_dash():
 		state = STATE.DASH_CHARGE
 		is_charging = true
 		dash_charge_time = 0.0
 
+		# Cancel any old FOV tween
+		if current_fov_tween and current_fov_tween.is_running():
+			current_fov_tween.kill()
+
+		# --- "Rubber stretch" anticipation ---
+		current_fov_tween = create_tween()
+		current_fov_tween.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+		current_fov_tween.tween_property(camera_node, "fov", dash_charge_camera_fov, 3)
+
+
+	# --- HOLDING CHARGE ---
 	if is_charging:
 		if Input.is_action_pressed("Dash"):
 			dash_charge_time = clamp(dash_charge_time + delta, 0, DASH_MAX_CHARGE_TIME)
 		elif Input.is_action_just_released("Dash"):
 			is_charging = false
 			start_dash()
+		return
+
+
+	# --- NORMAL STATE ---
+	# only reset FOV when we're truly idle (not charging or dashing)
+	if state == STATE.IDLE and camera_node.fov != base_camera_fov:
+		if current_fov_tween and current_fov_tween.is_running():
+			current_fov_tween.kill()
+		current_fov_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		current_fov_tween.tween_property(camera_node, "fov", base_camera_fov, 0.4)
+
 
 # --- TARGETING ROTATION ---
 func handle_targeting_rotation(delta: float) -> void:
@@ -301,22 +329,31 @@ func can_dash():
 func start_dash() -> void:
 	state = STATE.DASH
 	dash_audio.pitch_scale = randf_range(0.87, 1.17)
-	#the dash audio is 2.6 sec lon i want it to end when my dashg ends
 	dash_audio.play()
 	last_dash_time = Time.get_ticks_msec()
+
 	var charge_ratio = dash_charge_time / DASH_MAX_CHARGE_TIME
 	var dash_speed = lerp(DASH_MIN_SPEED, DASH_MAX_SPEED, charge_ratio)
 
 	var input_dir = Input.get_vector("Left", "Right", "Fwd", "Bkwd")
 	dash_direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	
 	if dash_direction == Vector3.ZERO:
 		dash_direction = -visuals.global_transform.basis.z.normalized()
 
 	velocity = dash_direction * dash_speed
 	dash_timer = DASH_DURATION
-	start_camera_shake(0.07, DASH_DURATION)  # strength = 0.05, duration = 0.2s
+	start_camera_shake(0.5, DASH_DURATION)
 	handle_animations()
+
+	# Cancel any old FOV tween
+	if current_fov_tween and current_fov_tween.is_running():
+		current_fov_tween.kill()
+
+	# --- Cinematic burst effect ---
+	current_fov_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	current_fov_tween.tween_property(camera_node, "fov", dash_charge_camera_fov + 10.0, 0.08)
+	current_fov_tween.tween_property(camera_node, "fov", base_camera_fov, 0.4)
+
 
 # --------------------------------------------------
 # ---------------- ANIMATIONS ----------------------
