@@ -1,20 +1,19 @@
-[gd_scene load_steps=12 format=3 uid="uid://dx8jada7b251p"]
+[gd_scene load_steps=13 format=3 uid="uid://dx8jada7b251p"]
 
 [ext_resource type="Texture2D" uid="uid://bnj4w0g8yge03" path="res://Assets/DxI0X41X0AUwQSM.jpg" id="1_a02cp"]
 [ext_resource type="PackedScene" uid="uid://bh12jayv0ufap" path="res://Scenes/Boss.tscn" id="3_8j60k"]
 [ext_resource type="PackedScene" uid="uid://bvbohtjna2pxg" path="res://Scenes/boss2.tscn" id="4_8j60k"]
 [ext_resource type="PackedScene" uid="uid://dkgy4vepowl7l" path="res://Scenes/player_bot.tscn" id="4_fo5ed"]
+[ext_resource type="PackedScene" uid="uid://6egc5vfal1kk" path="res://Scenes/fog.tscn" id="5_fo5ed"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_go701"]
-sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
-ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fo5ed"]
 
-[sub_resource type="Sky" id="Sky_5a7ea"]
-sky_material = SubResource("ProceduralSkyMaterial_go701")
+[sub_resource type="Sky" id="Sky_5ukr8"]
+sky_material = SubResource("ProceduralSkyMaterial_fo5ed")
 
 [sub_resource type="Environment" id="Environment_8j60k"]
 background_mode = 2
-sky = SubResource("Sky_5a7ea")
+sky = SubResource("Sky_5ukr8")
 tonemap_mode = 2
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_fo5ed"]
@@ -103,3 +102,7 @@ DASH_MAX_SPEED = 55.0
 ENEMY = NodePath("../bos2")
 dash_cooldown = 1.05
 ATTACK_SPEED = 2.355
+
+[node name="MeshInstance3D" parent="." instance=ExtResource("5_fo5ed")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -99.93737, 0)
+visible = false

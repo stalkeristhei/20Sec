@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://cq44bdmmjvxlh"]
+
+[ext_resource type="Texture2D" uid="uid://cbd6rdropyo6e" path="res://Assets/floor_bricks_02_1k.blend/textures/floor_bricks_02_diff_1k.jpg" id="1_k2yo4"]
+[ext_resource type="Texture2D" uid="uid://b806dk56tovh4" path="res://Assets/floor_bricks_02_1k.blend/textures/floor_bricks_02_rough_1k.jpg" id="2_2kpqj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q88ar"]
+albedo_texture = ExtResource("1_k2yo4")
+roughness_texture = ExtResource("2_2kpqj")
+uv1_scale = Vector3(2.765, 2.765, 2.765)
+uv1_offset = Vector3(0.16, 0, 0)
+uv1_triplanar = true
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_4s7yf"]
+material = SubResource("StandardMaterial3D_q88ar")
+top_radius = 0.716
+bottom_radius = 0.715
+height = 0.529
+radial_segments = 19
+
+[node name="Node3D" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_4s7yf")
