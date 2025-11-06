@@ -105,4 +105,3 @@ ATTACK_SPEED = 2.355
 
 [node name="MeshInstance3D" parent="." instance=ExtResource("5_fo5ed")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -99.93737, 0)
-visible = false
