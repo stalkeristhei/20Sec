@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3 uid="uid://6egc5vfal1kk"]
+
+[ext_resource type="Shader" uid="uid://dfa1y7nwaja2b" path="res://Shaders/fog.gdshader" id="1_n16hj"]
+[ext_resource type="Texture2D" uid="uid://b3sidt7q2dk6i" path="res://Assets/d637xrm-d8a0b633-59fb-4e52-b911-db6b2fdc2a86.png" id="2_5gb24"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5gb24"]
+render_priority = 0
+shader = ExtResource("1_n16hj")
+shader_parameter/albedo_texture = ExtResource("2_5gb24")
+shader_parameter/uv_scale = Vector2(5, 5)
+shader_parameter/scroll_speed = Vector2(0.016, 0)
+shader_parameter/color_tint = Vector4(0.895, 1, 1, 1)
+shader_parameter/emission_strength = 1.0
+shader_parameter/wave_amplitude = 0.0
+shader_parameter/wave_frequency = 3.0
+shader_parameter/wave_speed = 1.0
+shader_parameter/alpha = 1.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_5gb24"]
+size = Vector2(10000, 10000)
+
+[node name="fog" type="MeshInstance3D"]
+material_override = SubResource("ShaderMaterial_5gb24")
+ignore_occlusion_culling = true
+mesh = SubResource("PlaneMesh_5gb24")

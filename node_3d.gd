@@ -9,7 +9,7 @@ const SPEED = 4.0
 
 func _ready():
 	# Get player node
-	player = get_node(player_path)
+	player =get_node(player_path)
 	nav_agent = $NavigationAgent3D
 
 func _process(delta):
