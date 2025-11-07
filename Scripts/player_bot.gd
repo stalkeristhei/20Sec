@@ -23,7 +23,7 @@ var current_fov_tween: Tween
 @export var DASH_MIN_SPEED: float = 10.0
 @export var DASH_MAX_SPEED: float = 25.0
 @export var DASH_DURATION: float = 0.3
-@export var ENEMY: CharacterBody3D
+@export var ENEMY: Boss
 @export var dash_cooldown:float= 0.5	#seconds
 
 @export var attack_damage:float = 1
@@ -495,6 +495,7 @@ func big_camera_shake():
 func hit_or_miss_camera_shake():#this function is being called via the animation player
 	if is_attack_connected:#this value is being set by the sword scene inm the hand, when the swords detects enemy it changes this value to true
 		big_camera_shake()
+		give_damage()
 		print("attack_connected")
 	else:
 		print("attack_not_connected")
@@ -580,3 +581,7 @@ func _find_meshes_recursively(node: Node, mesh_list: Array[MeshInstance3D]) -> v
 		if child is MeshInstance3D:
 			mesh_list.append(child)
 		_find_meshes_recursively(child, mesh_list)
+		
+
+func give_damage():
+	ENEMY.take_damage(attack_damage)
