@@ -31,7 +31,6 @@ func _ready() -> void:
 	#if health <=0:
 	#	print("dead")
 		
-	healthbar.health = health
 
 func _physics_process(delta: float) -> void:
 	if not player:
