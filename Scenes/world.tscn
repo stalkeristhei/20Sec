@@ -1,8 +1,7 @@
-[gd_scene load_steps=13 format=3 uid="uid://dx8jada7b251p"]
+[gd_scene load_steps=12 format=3 uid="uid://dx8jada7b251p"]
 
 [ext_resource type="Texture2D" uid="uid://bnj4w0g8yge03" path="res://Assets/DxI0X41X0AUwQSM.jpg" id="1_a02cp"]
 [ext_resource type="PackedScene" uid="uid://cq44bdmmjvxlh" path="res://Scenes/level_design.tscn" id="3_5ukr8"]
-[ext_resource type="PackedScene" uid="uid://bh12jayv0ufap" path="res://Scenes/Boss.tscn" id="3_8j60k"]
 [ext_resource type="PackedScene" uid="uid://bvbohtjna2pxg" path="res://Scenes/boss2.tscn" id="4_8j60k"]
 [ext_resource type="PackedScene" uid="uid://dkgy4vepowl7l" path="res://Scenes/player_bot.tscn" id="4_fo5ed"]
 [ext_resource type="PackedScene" uid="uid://6egc5vfal1kk" path="res://Scenes/fog.tscn" id="5_fo5ed"]
@@ -34,11 +33,6 @@ emission_enabled = true
 uv1_triplanar = true
 
 [node name="World" type="Node3D"]
-
-[node name="BOSS" parent="." instance=ExtResource("3_8j60k")]
-process_mode = 4
-transform = Transform3D(-4.7617e-06, 0, -108.935, 0, 108.935, 0, 108.935, 0, -4.7617e-06, 3.9055061, 0.39543223, 5.3922195)
-visible = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_8j60k")
@@ -95,5 +89,13 @@ ENEMY = NodePath("../bos2")
 dash_cooldown = 1.05
 ATTACK_SPEED = 2.355
 
+[node name="BoneAttachment3D" parent="Player/visuals/Skeleton3D" index="3"]
+transform = Transform3D(0.46931338, -0.006797135, 0.8830053, -0.8827225, -0.0300581, 0.46893167, 0.023353737, -0.99952483, -0.020106614, -0.32589883, 0.94725794, -0.097349495)
+
+[node name="Sword_Low_Done" parent="Player/visuals/Skeleton3D/BoneAttachment3D" index="0" node_paths=PackedStringArray("boss")]
+boss = NodePath("../../../../../bos2")
+
 [node name="MeshInstance3D" parent="." instance=ExtResource("5_fo5ed")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -99.93737, 0)
+
+[editable path="Player"]

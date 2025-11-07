@@ -1,3 +1,4 @@
+class_name Boss
 extends CharacterBody3D
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
@@ -10,15 +11,27 @@ extends CharacterBody3D
 @export var ATTACK_RANGE: float = 4.0
 @export var RUN_RANGE: float = 10.0 # Start running when within this range
 
+@export var health = 10
+@onready var healthbar = $HealthBar 
+
 enum STATE { WALK, RUN, JUMP_ATTACK, SLASH }
 var state: STATE = STATE.WALK
 
 
 func _ready() -> void:
+	#healthp = healthp
+	healthbar.init_health(health)
+	
 	animation_tree.active = true
 	animation_tree.animation_finished.connect(_on_animation_finished)
 	randomize() # Seed RNG for attack randomness
 
+#func _set_health(value):
+	#super._set_health(value)
+	#if health <=0:
+	#	print("dead")
+		
+	healthbar.health = health
 
 func _physics_process(delta: float) -> void:
 	if not player:
@@ -119,3 +132,11 @@ func update_animation(global_velocity: Vector3) -> void:
 
 func is_in_range() -> bool:
 	return global_position.distance_to(player.global_position) < ATTACK_RANGE
+	
+	
+func take_damage(damage_recieved:float):
+	health = health - damage_recieved
+	print(health)
+	
+func give_damage():
+	pass

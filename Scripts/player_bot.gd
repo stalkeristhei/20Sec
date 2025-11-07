@@ -25,6 +25,8 @@ var current_fov_tween: Tween
 @export var DASH_DURATION: float = 0.3
 @export var ENEMY: CharacterBody3D
 @export var dash_cooldown:float= 0.5	#seconds
+
+@export var attack_damage:float = 1
 @export var attack_cooldown:float = 0.4
 @export var ATTACK_SPEED:float=1
 const JUMP_VELOCITY: float = 4.5

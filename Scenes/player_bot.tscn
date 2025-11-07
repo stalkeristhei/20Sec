@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c4k8kqjqcaap" path="res://Scenes/dashtrail.tscn" id="2_rpfsx"]
 [ext_resource type="PackedScene" uid="uid://cje62awmajpbc" path="res://Scenes/sword.tscn" id="3_xq46a"]
 [ext_resource type="Animation" uid="uid://ch5375sm8unhr" path="res://Assets/player/walk.res" id="3_yrvvx"]
-[ext_resource type="Animation" uid="uid://dtcowic46fqvh" path="res://Assets/player/dash.res" id="4_yrvvx"]
+[ext_resource type="Animation" uid="uid://da0d2jrn6h4d" path="res://Assets/player/dash.res" id="4_yrvvx"]
 [ext_resource type="Animation" uid="uid://bwsxgew6xvhmh" path="res://Assets/player/Great sword animations/GS_slash.res" id="7_yex41"]
 [ext_resource type="Animation" uid="uid://dy3oawbtnvxvc" path="res://Assets/player/Great sword animations/GS_strae.res" id="8_q1r4w"]
 [ext_resource type="Animation" uid="uid://c8ccmv2mllvyk" path="res://Assets/player/Great sword animations/sword_combo.res" id="9_q1r4w"]
