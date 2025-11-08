@@ -585,3 +585,6 @@ func _find_meshes_recursively(node: Node, mesh_list: Array[MeshInstance3D]) -> v
 
 func give_damage():
 	ENEMY.take_damage(attack_damage)
+
+func get_state():
+	return state

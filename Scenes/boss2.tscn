@@ -1,4 +1,4 @@
-[gd_scene load_steps=46 format=4 uid="uid://bvbohtjna2pxg"]
+[gd_scene load_steps=48 format=4 uid="uid://bvbohtjna2pxg"]
 
 [ext_resource type="Script" uid="uid://boehyyb2kijdr" path="res://Scripts/boss_2.gd" id="1_b5h4d"]
 [ext_resource type="PackedScene" uid="uid://cypuy5wvhvpbh" path="res://Assets/HealthBar/HealthBar.tscn" id="2_q5qqr"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://bd2g1sxorif7x" path="res://Assets/boss2/skin/Ch30_nonPBR_7.png" id="8_iqxb7"]
 [ext_resource type="Animation" uid="uid://r4ilxxs21y7w" path="res://Assets/boss2/slash.res" id="9_x72gp"]
 [ext_resource type="Animation" uid="uid://d3hfafwfjbpro" path="res://Assets/boss2/run.res" id="10_y7cr1"]
+[ext_resource type="Texture2D" uid="uid://bj7cyuxuxfxrp" path="res://Assets/Sprite-0001.png" id="14_ti373"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tvscf"]
 radius = 0.18115234
@@ -232,6 +233,16 @@ bind/50/pose = Transform3D(-0.99704, 0.068805784, -0.03429854, -0.0652496, -0.52
 bind/51/name = &"mixamorig_RightArm"
 bind/51/bone = -1
 bind/51/pose = Transform3D(-0.10523921, 0.08943173, 0.99041694, -0.98282105, -0.16119951, -0.08987625, 0.15161693, -0.98286116, 0.1048599, -0.12516393, 0.037311327, 1.4404777)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gtv7j"]
+transparency = 1
+albedo_color = Color(18.892002, 18.892002, 18.892002, 1)
+albedo_texture = ExtResource("14_ti373")
+emission_enabled = true
+emission = Color(3.2368753, 3.2368753, 3.2368753, 1)
+emission_energy_multiplier = 2.7
+billboard_mode = 1
+billboard_keep_scale = true
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_y7cr1"]
 radius = 0.47314453
@@ -1791,6 +1802,12 @@ skin = SubResource("Skin_5tcf2")
 transform = Transform3D(0.3124857, -0.19699922, -0.9292707, 0.045423932, 0.9802393, -0.19252953, 0.9488358, 0.017951585, 0.31525922, 0, 0.9255486, 0.045525)
 bone_name = "mixamorig_Hips"
 bone_idx = 0
+
+[node name="Sprite3D" type="Sprite3D" parent="Skeleton3D/BoneAttachment3D"]
+transform = Transform3D(-0.39824742, 0.00057974714, -0.34208718, 0.046663098, 0.5201841, -0.053442173, 0.3388901, -0.070944875, -0.39464578, 0.07027391, 1.096672, 0.26839262)
+material_overlay = SubResource("StandardMaterial3D_gtv7j")
+texture = ExtResource("14_ti373")
+hframes = 7
 
 [node name="Area3D" type="Area3D" parent="Skeleton3D/BoneAttachment3D"]
 transform = Transform3D(-0.7572827, -0.05605921, -0.6506768, 0.03809449, 0.99082124, -0.12970024, 0.6519753, -0.12300696, -0.7481961, 0.02226347, -0.92295784, 0.0797873)

@@ -4,12 +4,14 @@ extends CharacterBody3D
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var animation_tree: AnimationTree = $AnimationTree
 
-@export var player: CharacterBody3D
+@export var player: Player
 @export var WALK_SPEED: float = 1.5
 @export var RUN_SPEED: float = 3.5
 @export var GRAVITY: float = 9.8
 @export var ATTACK_RANGE: float = 4.0
 @export var RUN_RANGE: float = 10.0 # Start running when within this range
+
+@onready var sprite_3d: Sprite3D = $Skeleton3D/BoneAttachment3D/Sprite3D
 
 @export var health = 10
 @onready var healthbar = $HealthBar 
@@ -26,10 +28,6 @@ func _ready() -> void:
 	animation_tree.animation_finished.connect(_on_animation_finished)
 	randomize() # Seed RNG for attack randomness
 
-#func _set_health(value):
-	#super._set_health(value)
-	#if health <=0:
-	#	print("dead")
 		
 
 func _physics_process(delta: float) -> void:
@@ -90,7 +88,13 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	handle_animations()
 	update_animation(self.velocity)
+	check_player_state()
 
+func check_player_state():
+	if player.is_targeting:
+		sprite_3d.visible = true
+	else:
+		sprite_3d.visible = false
 
 # --- Random attack chooser ---
 func choose_attack() -> void:
