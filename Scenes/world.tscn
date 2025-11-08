@@ -89,9 +89,6 @@ ENEMY = NodePath("../bos2")
 dash_cooldown = 1.05
 ATTACK_SPEED = 2.355
 
-[node name="BoneAttachment3D" parent="Player/visuals/Skeleton3D" index="3"]
-transform = Transform3D(0.46931338, -0.006797135, 0.8830053, -0.8827225, -0.0300581, 0.46893167, 0.023353737, -0.99952483, -0.020106614, -0.32589883, 0.94725794, -0.097349495)
-
 [node name="Sword_Low_Done" parent="Player/visuals/Skeleton3D/BoneAttachment3D" index="0" node_paths=PackedStringArray("boss")]
 boss = NodePath("../../../../../bos2")
 

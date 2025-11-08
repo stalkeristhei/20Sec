@@ -29,7 +29,6 @@ func _ready() -> void:
 	randomize() # Seed RNG for attack randomness
 
 		
-
 func _physics_process(delta: float) -> void:
 	if not player:
 		velocity = Vector3.ZERO
@@ -60,30 +59,29 @@ func _physics_process(delta: float) -> void:
 			if direction.length() > 0.001:
 				direction = direction.normalized()
 
-			# Face player
+			# --- Face player ---
 			var look_at_pos = Vector3(player.global_position.x, global_position.y, player.global_position.z)
 			if global_position.distance_to(look_at_pos) > 0.1:
 				look_at(look_at_pos, Vector3.UP)
 
-			# ✅ This logic correctly uses the state to set speed
+			# --- Movement ---
 			var speed = RUN_SPEED if state == STATE.RUN else WALK_SPEED
 			self.velocity = Vector3(direction.x * speed, current_velocity.y, direction.z * speed)
 
-			# --- State transitions (FIXED) ---
+			# --- State transitions ---
 			if distance_to_player < ATTACK_RANGE:
 				choose_attack()
 			elif distance_to_player < RUN_RANGE and state != STATE.RUN:
-				# Player is close, so WALK
 				state = STATE.WALK
 			else:
-				# Player is far, so RUN
 				state = STATE.RUN
 
 		STATE.JUMP_ATTACK, STATE.SLASH:
-			# During attack — just face the player and stay still horizontally
-			var look_at_pos = Vector3(player.global_position.x, global_position.y, player.global_position.z)
-			look_at(look_at_pos, Vector3.UP)
-			self.velocity = Vector3(0.0, current_velocity.y, 0.0)
+			# ✅ No rotation or horizontal movement while attacking
+			self.velocity.x = 0.0
+			self.velocity.z = 0.0
+			# Keep only gravity active
+			self.velocity.y = current_velocity.y
 
 	move_and_slide()
 	handle_animations()
