@@ -3779,9 +3779,24 @@ tracks/53/path = NodePath("..")
 tracks/53/interp = 1
 tracks/53/loop_wrap = true
 tracks/53/keys = {
-"times": PackedFloat32Array(1.0666667),
-"transitions": PackedFloat32Array(1),
+"times": PackedFloat32Array(1.0181789, 1.0403835, 1.0666667, 1.09, 1.1111602, 1.1680591),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
 "values": [{
+"args": [],
+"method": &"hit_or_miss_camera_shake"
+}, {
+"args": [],
+"method": &"hit_or_miss_camera_shake"
+}, {
+"args": [],
+"method": &"hit_or_miss_camera_shake"
+}, {
+"args": [],
+"method": &"hit_or_miss_camera_shake"
+}, {
+"args": [],
+"method": &"hit_or_miss_camera_shake"
+}, {
 "args": [],
 "method": &"hit_or_miss_camera_shake"
 }]

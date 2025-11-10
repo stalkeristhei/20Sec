@@ -4,6 +4,7 @@ extends Node3D
 
 signal attack_is_conected
 @export var player:Player
+@export var boss:Boss
 
 func give_damage(damage:float):
 	pass
