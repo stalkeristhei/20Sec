@@ -1,4 +1,4 @@
-class_name Boss
+
 extends CharacterBody3D
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D

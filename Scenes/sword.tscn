@@ -50,7 +50,7 @@ blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_8oivm")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_6j4cb"]
-size = Vector3(0.19897461, 6.101345, 0.27687073)
+size = Vector3(0.19897461, 6.101345, 0.42505264)
 
 [node name="Sword_Low_Done" type="Node3D"]
 script = ExtResource("1_ksptp")
@@ -65,7 +65,7 @@ collision_layer = 4
 collision_mask = 2
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.012084961, -1.6937237, 0.013852656)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.012084961, -1.6937237, 0.0027461648)
 shape = SubResource("BoxShape3D_6j4cb")
 debug_color = Color(0.9652614, 2.0214916e-06, 0.5047217, 0.41960785)
 
